@@ -41,34 +41,31 @@ def main():
             messages.append({"role": "assistant", "content": a})
         messages.append({"role": "user", "content": one['question']})
         out = query_chat(messages, model, tok)
+        eqs = extract_equations(out)
+        while eqs == '':
+            out = query_chat(messages, model, tok)
+            eqs = extract_equations(out)
         if args.retrieval:
             if args.option == "cot":
                 query = get_embedding(f"Q: {one['question']}\nA: {out}")
             elif args.option == "question":
                 query = get_embedding(one['question'])
             elif args.option == "eqs":
-                text = extract_equations(out)
-                while text == '':
-                    out = query_chat(messages, model, tok)
-                    text = extract_equations(out)
-                query = get_embedding(text)
+                query = get_embedding(eqs)
             else:
                 raise NotImplementedError(f"{args.option} is not implemented")
             old_outs.append(out)
-            if query is not None:
-                query = np.array(query).reshape(1, -1)
-                _, knns = index.search(query, args.num)
-                questions = [datastore['question'][i] for i in knns[0]]
-                answers = [datastore['answer'][i] for i in knns[0]]
-                messages = [sys_msg]
-                for q, a in zip(questions, answers):
-                    messages.append({"role": "user", "content": q})
-                    messages.append({"role": "assistant", "content": a})
-                messages.append({"role": "user", "content": one['question']})
-                out = query_chat(messages, model, tok)
-                retrieved.append([(q, a) for q, a in zip(questions, answers)])
-            else:
-                retrieved.append([])
+            query = np.array(query).reshape(1, -1)
+            _, knns = index.search(query, args.num)
+            questions = [datastore['question'][i] for i in knns[0]]
+            answers = [datastore['answer'][i] for i in knns[0]]
+            messages = [sys_msg]
+            for q, a in zip(questions, answers):
+                messages.append({"role": "user", "content": q})
+                messages.append({"role": "assistant", "content": a})
+            messages.append({"role": "user", "content": one['question']})
+            out = query_chat(messages, model, tok)
+            retrieved.append([(q, a) for q, a in zip(questions, answers)])
         pred, _ = extract_answer_and_chain(out)
         label, _ = extract_answer_and_chain(one['answer'])
         res = pred == label
