@@ -69,7 +69,6 @@ def main():
                 retrieved.append([(q, a) for q, a in zip(questions, answers)])
             else:
                 retrieved.append([])
-        old_pred, _ = extract_answer_and_chain(old_outs[-1])
         pred, _ = extract_answer_and_chain(out)
         label, _ = extract_answer_and_chain(one['answer'])
         res = pred == label
@@ -77,6 +76,7 @@ def main():
             acc += 1
         print(res)
         if args.retrieval:
+            old_pred, _ = extract_answer_and_chain(old_outs[-1])
             print(old_outs[-1], '|', old_pred)
         print(out, '|', pred)
         print(one['answer'], '|', label)
