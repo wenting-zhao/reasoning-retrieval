@@ -13,7 +13,15 @@ client = openai.OpenAI(
 )
 
 def get_embedding(text, model="text-embedding-3-large"):
-   return client.embeddings.create(input = [text], model=model).data[0].embedding
+    error = True
+    while error:
+        try:
+            out = client.embeddings.create(input = [text], model=model).data[0].embedding
+            error = False
+        except openai._exceptions.OpenAIError as e:
+            print(type(e), e)
+            time.sleep(1)
+    return out
 
 def query_chat(messages, model, tokenizer=None, temperature=1, max_tokens=512):
     if isinstance(model, str):
@@ -37,6 +45,8 @@ def query_chat(messages, model, tokenizer=None, temperature=1, max_tokens=512):
                 time.sleep(5)
                 print(type(e), e)
     else:
+        if 'system' not in tokenizer.default_chat_template:
+            messages = messages[1:]
         tokenized_chat = tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True, return_tensors="pt").to(device)
         attn_mask = torch.ones_like(tokenized_chat, device=device)
         with torch.no_grad():
