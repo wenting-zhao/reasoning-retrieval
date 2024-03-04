@@ -76,7 +76,8 @@ def main():
         if res:
             acc += 1
         print(res)
-        print(old_outs[-1], '|', old_pred)
+        if args.retrieval:
+            print(old_outs[-1], '|', old_pred)
         print(out, '|', pred)
         print(one['answer'], '|', label)
         print("="*100)
