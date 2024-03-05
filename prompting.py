@@ -42,10 +42,10 @@ def main():
         messages.append({"role": "user", "content": one['question']})
         out = query_chat(messages, model, tok)
         eqs = extract_equations(out)
-        while eqs == '' or "####" not in out:
-            out = query_chat(messages, model, tok)
-            eqs = extract_equations(out)
-        if args.retrieval:
+        if args.retrieval and eqs == '' and args.option == "eqs":
+            old_outs.append(out)
+            retrieved.append([])
+        elif args.retrieval:
             if args.option == "cot":
                 query = get_embedding(f"Q: {one['question']}\nA: {out}")
             elif args.option == "question":
@@ -65,8 +65,6 @@ def main():
                 messages.append({"role": "assistant", "content": a})
             messages.append({"role": "user", "content": one['question']})
             out = query_chat(messages, model, tok)
-            while "####" not in out:
-                out = query_chat(messages, model, tok)
             retrieved.append([(q, a) for q, a in zip(questions, answers)])
         pred, _ = extract_answer_and_chain(out)
         label, _ = extract_answer_and_chain(one['answer'])
@@ -74,7 +72,7 @@ def main():
         if res:
             acc += 1
         print(res)
-        if args.retrieval:
+        if args.retrieval and len(retrieved[-1]) > 0:
             old_pred, _ = extract_answer_and_chain(old_outs[-1])
             print(old_outs[-1], '|', old_pred)
         print(out, '|', pred)
@@ -83,10 +81,9 @@ def main():
         outs.append(out)
     print(acc/len(ds_test))
     ds_test = ds_test.add_column(name='out', column=outs)
-    if args.retrieval:
-        ds_test = ds_test.add_column(name='original', column=old_outs)
     name = f"{args.model}-{args.num}"
     if args.retrieval:
+        ds_test = ds_test.add_column(name='original', column=old_outs)
         ds_test = ds_test.add_column(name='retrieval', column=retrieved)
         name += f'-retrieval-{args.option}'
     name += '.json'

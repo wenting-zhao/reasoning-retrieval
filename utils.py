@@ -45,7 +45,8 @@ def query_chat(messages, model, tokenizer=None, temperature=1, max_tokens=512):
                 time.sleep(5)
                 print(type(e), e)
     else:
-        if 'system' not in tokenizer.default_chat_template:
+        if 'system' not in tokenizer.chat_template or 'System role not supported' in tokenizer.chat_template:
+            messages[1]["content"] = messages[0]["content"] + '\n\n' + messages[1]["content"]
             messages = messages[1:]
         tokenized_chat = tokenizer.apply_chat_template(messages, tokenize=True, add_generation_prompt=True, return_tensors="pt").to(device)
         attn_mask = torch.ones_like(tokenized_chat, device=device)
