@@ -42,7 +42,7 @@ def main():
         messages.append({"role": "user", "content": one['question']})
         out = query_chat(messages, model, tok)
         eqs = extract_equations(out)
-        while eqs == '':
+        while eqs == '' or "####" not in out:
             out = query_chat(messages, model, tok)
             eqs = extract_equations(out)
         if args.retrieval:
@@ -65,6 +65,8 @@ def main():
                 messages.append({"role": "assistant", "content": a})
             messages.append({"role": "user", "content": one['question']})
             out = query_chat(messages, model, tok)
+            while "####" not in out:
+                out = query_chat(messages, model, tok)
             retrieved.append([(q, a) for q, a in zip(questions, answers)])
         pred, _ = extract_answer_and_chain(out)
         label, _ = extract_answer_and_chain(one['answer'])
